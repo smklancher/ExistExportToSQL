@@ -8,7 +8,7 @@ namespace ExistExportToSQL
 {
     public class ScriptGenerator
     {
-        public string Folder { get; set; } = @"C:\Temp\Exist";
+        public string Folder { get; set; } = string.Empty;
 
         public string Script { get; private set; } = string.Empty;
 
@@ -21,53 +21,77 @@ namespace ExistExportToSQL
                 sb.AppendLine(FileToScript(file));
             }
 
+            sb.Append(ScriptEnd());
+
             Script = sb.ToString();
         }
 
         private static string FileToScript(string file)
         {
-            var name = Path.GetFileNameWithoutExtension(file);
-            if (!Enums.IsComplexType(name))
+            var name = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
+            ExistTable? existTable = null;
+
+            // special handling for types that don't just have date and value
+            if (Enums.IsComplexType(name))
             {
-                var simple = new SimpleAttribute(file);
-                simple.Load();
-                if (simple.HasError)
+                switch (name)
                 {
-                    LogMessageInScript($"Note: Script for {name} was not generated due to an error: {simple.ErrorMessage}");
-                }
-                else
-                {
-                    Console.WriteLine($"Created script for {name}");
-                    return ScriptFromSimpleAttribute(simple);
+                case "averages":
+                    existTable = new AveragesExistTable(file);
+                    break;
+
+                case "correlations":
+                    existTable = new CorrelationsExistTable(file);
+                    break;
+
+                default:
+                    Console.WriteLine($"Skipping complex type {name}");
+                    break;
                 }
             }
             else
             {
-                Console.WriteLine($"Skipping complex type {name}");
+                existTable = new SimpleExistTable(file);
             }
 
-            return string.Empty;
+            if (existTable == null)
+            {
+                return string.Empty;
+            }
+
+            if (existTable.HasError)
+            {
+                Console.WriteLine($"Note: Script for {name} was not generated due to an error: {existTable.ErrorMessage}");
+                return string.Empty;
+            }
+            else
+            {
+                Console.WriteLine($"Created script for {name}");
+                return existTable.ImportScript();
+            }
         }
 
-        private static string LogMessageInScript(string message)
+        private static string ScriptEnd()
         {
-            return $"RAISERROR('{message.Replace("'", "''", StringComparison.InvariantCulture)}', 0, 1) WITH NOWAIT";
-        }
+            return $@"
+{ExistTable.LogMessageInScript("Creating helper tables")}
+{ExistTable.LogMessageInScript("Helper table 'location_geo' enhances original table 'location' by storing coordinates in SQL Server's native GEOGRAPHY data type")}
+DROP TABLE IF EXISTS location_geo
+SELECT [date],[value], SUBSTRING(value,CHARINDEX(',',value)+1,255) AS lon,  SUBSTRING(value,0,CHARINDEX(',',value)) AS lat,
+Cast('POINT('+ SUBSTRING(value,CHARINDEX(',',value)+1,255) + ' ' + SUBSTRING(value,0,CHARINDEX(',',value)) + ')'  AS GEOGRAPHY) AS geo,
+Cast('POINT('+ SUBSTRING(value,CHARINDEX(',',value)+1,255) + ' ' + SUBSTRING(value,0,CHARINDEX(',',value)) + ')'  AS GEOGRAPHY).STAsText() AS geotext
+INTO location_geo
+FROM [location]
 
-        private static string ScriptFromSimpleAttribute(SimpleAttribute sa)
-        {
-            var msg = LogMessageInScript($"Importing {sa.FileName}");
-            return @$"
+{ExistTable.LogMessageInScript("Helper table 'sleep_end_ex' enhances original table 'sleep_end' by normalizing the 'minutes from midnight as integer' data to TIME and DATETIME")}
+SELECT [date],[value], DATEADD(MINUTE,value,CAST('' AS TIME)) AS TimeWake,  DATEADD(MINUTE,value,CAST(date AS DATETIME)) AS DateTimeWake
+INTO sleep_end_ex
+FROM sleep_end
 
-{msg}
-SELECT @JSON = BulkColumn
-FROM OPENROWSET(BULK '{sa.FileName}', SINGLE_CLOB) AS j
-
-DROP TABLE IF EXISTS {sa.TableName}
-SELECT *
-INTO {sa.TableName}
-FROM OPENJSON(@JSON)
-WITH(date DATE, value {sa.ValueSqlTypeName})
+{ExistTable.LogMessageInScript("Helper table 'sleep_start_ex' enhances original table 'sleep_start' by normalizing the 'minutes from midday as integer' data to TIME and DATETIME")}
+SELECT [date],[value], DATEADD(MINUTE,value,CAST('12:00' AS TIME)) AS TimeSleep,  DATEADD(MINUTE,value+720,CAST(date AS DATETIME)) AS DateTimeSleep
+INTO sleep_start_ex
+FROM sleep_start
 ";
         }
 
