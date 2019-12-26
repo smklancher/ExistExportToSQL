@@ -48,10 +48,17 @@ jobs:
         run: pwd
       - name: ls
         run: ls
-      - name: Build with dotnet
+      - name: Publish win
         working-directory: ./ExistExportToSQL
         run: dotnet publish -r win-x64 -c Release -p:PublishSingleFile=true --no-self-contained -o:./FrameworkDependentSingleFile/win
+      - name: Publish linux
+        working-directory: ./ExistExportToSQL
+        run: dotnet publish -r linux-x64 -c Release -p:PublishSingleFile=true --no-self-contained -o:./FrameworkDependentSingleFile/linux
+      - name: Publish osx
+        working-directory: ./ExistExportToSQL
+        run: dotnet publish -r osx-x64 -c Release -p:PublishSingleFile=true --no-self-contained -o:./FrameworkDependentSingleFile/osx
       - name: Zip Build
+        working-directory: ./ExistExportToSQL
         run: zip -r my-artifact.zip FrameworkDependentSingleFile
       - name: Create Release
         id: create_release
