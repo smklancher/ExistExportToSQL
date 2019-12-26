@@ -44,7 +44,7 @@ jobs:
       - name: pwd
         run: pwd
       - name: CD
-        run: cd ./ExistExportToSQL
+        run: cd ExistExportToSQL
       - name: pwd
         run: pwd
       - name: ls
