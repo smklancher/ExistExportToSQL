@@ -41,8 +41,14 @@ jobs:
         env:
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
         run: echo "$MATRIX_CONTEXT"
+      - name: pwd
+        run: pwd
       - name: CD
         run: cd ./ExistExportToSQL
+      - name: pwd
+        run: pwd
+      - name: ls
+        run: ls
       - name: Build with dotnet
         run: dotnet publish -r win-x64 -c Release -p:PublishSingleFile=true --no-self-contained -o:./FrameworkDependentSingleFile/win
       - name: Zip Build
