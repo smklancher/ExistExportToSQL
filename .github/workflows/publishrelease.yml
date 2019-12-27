@@ -17,18 +17,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@master
       - name: testdir1
-        run: pwd
-        working-directory: ./${{ env.PROJECT_NAME }}
+        run: echo ./${{ env.PROJECT_NAME }}
       - name: testdir2
-        run: pwd
-        working-directory: ./${PROJECT_NAME}
+        run: echo ${PROJECT_NAME}
       - name: testdir3
-        run: pwd
-        working-directory: "./$PROJECT_NAME"
+        run: echo "./$PROJECT_NAME"
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 3.1.100
+      - name: Dump env context
+        env:
+          ENV_ALL: ${{ toJson(env) }}
+        run: echo "$ENV_ALL"
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
