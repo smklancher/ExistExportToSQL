@@ -6,6 +6,9 @@ on:
 
 name: Upload Release Asset
 
+env:
+  PROJECT_NAME: ExistExportToSQL
+
 jobs:
   build:
     name: Upload Release Asset
@@ -42,17 +45,17 @@ jobs:
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
         run: echo "$MATRIX_CONTEXT"
       - name: Publish win
-        working-directory: ./ExistExportToSQL
+        working-directory: ./$PROJECT_NAME
         run: dotnet publish -r win-x64 -c Release -p:PublishSingleFile=true --no-self-contained -o:./FrameworkDependentSingleFile/win
       - name: Publish linux
-        working-directory: ./ExistExportToSQL
+        working-directory: ./$PROJECT_NAME
         run: dotnet publish -r linux-x64 -c Release -p:PublishSingleFile=true --no-self-contained -o:./FrameworkDependentSingleFile/linux
       - name: Publish osx
-        working-directory: ./ExistExportToSQL
+        working-directory: ./$PROJECT_NAME
         run: dotnet publish -r osx-x64 -c Release -p:PublishSingleFile=true --no-self-contained -o:./FrameworkDependentSingleFile/osx
       - name: Zip Build
-        working-directory: ./ExistExportToSQL
-        run: zip -r my-artifact.zip FrameworkDependentSingleFile
+        working-directory: ./$PROJECT_NAME/FrameworkDependentSingleFile
+        run: zip -r $PROJECT_NAME.zip .
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1.0.0
@@ -60,11 +63,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          release_name: $PROJECT_NAME ${{ github.ref }}
           draft: false
           prerelease: false
       - name: Zip Build
-        working-directory: ./ExistExportToSQL
+        working-directory: ./$PROJECT_NAME
         run: ls
       - name: Upload Release Asset
         id: upload-release-asset 
@@ -73,6 +76,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./ExistExportToSQL/my-artifact.zip
-          asset_name: my-artifact.zip
+          asset_path: ./$PROJECT_NAME/$PROJECT_NAME.zip
+          asset_name: $PROJECT_NAME.zip
           asset_content_type: application/zip
