@@ -16,10 +16,10 @@ jobs:
     steps:
       - name: testdir1
         run: pwd
-        working-directory: ./${{ PROJECT_NAME }}
+        working-directory: ./${{ env.PROJECT_NAME }}
       - name: testdir2
         run: pwd
-        working-directory: ./${{PROJECT_NAME}}
+        working-directory: ./${PROJECT_NAME}
       - name: testdir3
         run: pwd
         working-directory: "./$PROJECT_NAME"
