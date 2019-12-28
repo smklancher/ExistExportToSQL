@@ -9,5 +9,5 @@ dotnet publish -r linux-x64 -c Release -p:PublishSingleFile=true --no-self-conta
 dotnet publish -r osx-x64 -c Release -p:PublishSingleFile=true -p:PublishTrimmed=true -o:.\Publish\SelfContained\osx
 dotnet publish -r osx-x64 -c Release -p:PublishSingleFile=true --no-self-contained -o:.\Publish\FrameworkDependentSingleFile\osx
 
-dotnet publish -c Release -o:.\CrossPlatform
+dotnet publish -c Release -o:.\Publish\CrossPlatform
 pause

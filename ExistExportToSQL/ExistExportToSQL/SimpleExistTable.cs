@@ -29,7 +29,7 @@ namespace ExistExportToSQL
                 JsonValueKind.True => "BIT",
                 JsonValueKind.Number when int.TryParse(text, out var _) => "INT",
                 JsonValueKind.Number when !int.TryParse(text, out var _) => "FLOAT",
-                _ => "NVARCHAR(MAX)" // treat anything else is string
+                _ => "NVARCHAR(MAX)" // treat anything else as string
             };
         }
 
@@ -47,7 +47,7 @@ namespace ExistExportToSQL
                     {
                         if (value.ValueKind == JsonValueKind.Null || value.ValueKind == JsonValueKind.Undefined)
                         {
-                            //don't know what type value is yet, so keep going
+                            // Keep going until we know what type the data is
                             continue;
                         }
                         else
@@ -64,7 +64,7 @@ namespace ExistExportToSQL
                     }
                 }
 
-                //never found out what type value was due to all null
+                // Never found out what type value was because all values were null.  Thus no reason to import at all.
                 HasError = true;
                 ErrorMessage = "Data is all null";
             }
