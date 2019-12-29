@@ -103,7 +103,9 @@ ORDER BY geo.STDistance(@home) DESC;
 
 ## Implementation details
 
-This project encompases a number of things that I wanted to play with.
+I would expect the format of the json to change when future changes discussed [here](http://blog.hellocode.co/post/exist-in-2020/) are implemented.  This utility will need to be updated at that point.
+
+This project encompases a number of things that I wanted to play with:
 
 * .NET Core 3.1 and C# 8.0 with excuses to touch at least some of the new things: [System.Text.Json](https://devblogs.microsoft.com/dotnet/try-the-new-system-text-json-apis/), [Nullable reference types](https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#nullable-reference-types), [Switch Expressions](https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#switch-expressions), [Using declarations](https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#using-declarations).
 * [Dragonfruit](https://github.com/dotnet/command-line-api/wiki/Your-first-app-with-System.CommandLine.DragonFruit) provides nice command line functionality with very little work.
