@@ -59,7 +59,7 @@ jobs:
         run: dotnet publish -r osx-x64 -c Release -p:PublishSingleFile=true --no-self-contained -o:./FrameworkDependentSingleFile/osx
       - name: Zip Build
         working-directory: ./${{ env.PROJECT_NAME }}/FrameworkDependentSingleFile
-        run: zip -r ${{ env.PROJECT_NAME }}.zip
+        run: zip -r ${{ env.PROJECT_NAME }}.zip .
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1.0.0
@@ -85,6 +85,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}.zip
+          asset_path: ./${{ env.PROJECT_NAME }}/FrameworkDependentSingleFile/${{ env.PROJECT_NAME }}.zip
           asset_name: ${{ env.PROJECT_NAME }}.zip
           asset_content_type: application/zip
