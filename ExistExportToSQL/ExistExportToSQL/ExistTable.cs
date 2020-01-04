@@ -22,6 +22,11 @@ namespace ExistExportToSQL
 
         public string TableName => Path.GetFileNameWithoutExtension(FileName);
 
+        public static string DropTableStatement(string tableName)
+        {
+            return $"DROP TABLE IF EXISTS {tableName}";
+        }
+
         public static string LogMessageInScript(string message)
         {
             return $"RAISERROR('{message.Replace("'", "''", StringComparison.InvariantCulture)}', 0, 1) WITH NOWAIT";
@@ -35,12 +40,14 @@ namespace ExistExportToSQL
 SELECT @JSON = BulkColumn
 FROM OPENROWSET(BULK '{FileName}', SINGLE_CLOB) AS j
 
-DROP TABLE IF EXISTS {TableName}
+{DropTableStatement(TableName)}
 SELECT *
 INTO {TableName}
 FROM OPENJSON(@JSON)
 ";
         }
+
+        public string DropThisTableStatement() => DropTableStatement(TableName);
 
         public void ErrorMsg(string message)
         {

@@ -22,12 +22,15 @@ namespace ExistExportToSQL
                 outputFile = new FileInfo(Path.Combine(inputFolder.FullName, "ImportExistJson.sql"));
             }
 
+            var dropFile = Path.Combine(outputFile.Directory.FullName, "DropExistTables.sql");
+
             var gen = new ScriptGenerator();
 
             gen.Folder = inputFolder.FullName;
             gen.GenerateFromFolder();
 
-            File.WriteAllText(outputFile.FullName, gen.Script);
+            File.WriteAllText(outputFile.FullName, gen.CreateScript);
+            File.WriteAllText(dropFile, gen.DropScript);
         }
     }
 }

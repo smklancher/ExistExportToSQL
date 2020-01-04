@@ -8,25 +8,50 @@ namespace ExistExportToSQL
 {
     public class ScriptGenerator
     {
-        public string Folder { get; set; } = string.Empty;
+        public string CreateScript { get; private set; } = string.Empty;
 
-        public string Script { get; private set; } = string.Empty;
+        public string DropScript { get; private set; } = string.Empty;
+
+        public string Folder { get; set; } = string.Empty;
 
         public void GenerateFromFolder()
         {
-            var sb = new StringBuilder(ScriptStart());
+            var create = new StringBuilder(ScriptStart());
+            var drop = new StringBuilder();
             var files = Directory.EnumerateFiles(Folder, "*.json");
             foreach (var file in files)
             {
-                sb.AppendLine(FileToScript(file));
+                var table = FileToTableObject(file);
+                AppendScriptsFromTableObject(table, create, drop);
             }
 
-            sb.Append(ScriptEnd());
+            create.Append(ScriptEnd());
+            drop.Append(DropHelperTables());
 
-            Script = sb.ToString();
+            CreateScript = create.ToString();
+            DropScript = drop.ToString();
         }
 
-        private static string FileToScript(string file)
+        internal static void AppendScriptsFromTableObject(ExistTable? existTable, StringBuilder create, StringBuilder drop)
+        {
+            if (existTable == null)
+            {
+                return;
+            }
+
+            if (existTable.HasError)
+            {
+                Console.WriteLine($"Note: Script for {existTable.TableName} was not generated due to an error: {existTable.ErrorMessage}");
+                return;
+            }
+
+            Console.WriteLine($"Created script for {existTable.TableName}");
+
+            create.AppendLine(existTable.ImportScript());
+            drop.AppendLine(existTable.DropThisTableStatement());
+        }
+
+        internal static ExistTable? FileToTableObject(string file)
         {
             var name = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
             ExistTable? existTable = null;
@@ -54,21 +79,18 @@ namespace ExistExportToSQL
                 existTable = new SimpleExistTable(file);
             }
 
-            if (existTable == null)
+            return existTable;
+        }
+
+        private static string DropHelperTables()
+        {
+            var sb = new StringBuilder();
+            foreach (var t in new string[] { "location_geo", "sleep_end_ex", "sleep_start_ex" })
             {
-                return string.Empty;
+                sb.AppendLine(ExistTable.DropTableStatement(t));
             }
 
-            if (existTable.HasError)
-            {
-                Console.WriteLine($"Note: Script for {name} was not generated due to an error: {existTable.ErrorMessage}");
-                return string.Empty;
-            }
-            else
-            {
-                Console.WriteLine($"Created script for {name}");
-                return existTable.ImportScript();
-            }
+            return sb.ToString();
         }
 
         private static string ScriptEnd()
