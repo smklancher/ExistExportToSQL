@@ -20,6 +20,8 @@ namespace ExistExportToSQL
 
         public bool HasError { get; protected set; }
 
+        public bool IsCustomTag { get; protected set; } = false;
+
         public string TableName => Path.GetFileNameWithoutExtension(FileName);
 
         public static string DropTableStatement(string tableName)

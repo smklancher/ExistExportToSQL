@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace ExistExportToSQL
 {
@@ -19,37 +20,74 @@ namespace ExistExportToSQL
             var create = new StringBuilder(ScriptStart());
             var drop = new StringBuilder();
             var files = Directory.EnumerateFiles(Folder, "*.json");
-            foreach (var file in files)
+
+            // ways other than OfType don't seem to work with nullability tracking yet:
+            // https://github.com/dotnet/roslyn/issues/37468#issuecomment-515142288
+            var tables = files.Select(x => FileToTableObject(x)).OfType<ExistTable>();
+
+            foreach (var table in tables)
             {
-                var table = FileToTableObject(file);
                 AppendScriptsFromTableObject(table, create, drop);
             }
 
-            create.Append(ScriptEnd());
-            drop.Append(DropHelperTables());
+            create.AppendLine(ScriptEnd());
+            drop.AppendLine(DropHelperTables());
+
+            AppendScriptsForViews(tables, create, drop);
 
             CreateScript = create.ToString();
             DropScript = drop.ToString();
         }
 
-        internal static void AppendScriptsFromTableObject(ExistTable? existTable, StringBuilder create, StringBuilder drop)
+        internal static void AppendScriptsForViews(IEnumerable<ExistTable> tables, StringBuilder create, StringBuilder drop)
         {
-            if (existTable == null)
-            {
-                return;
-            }
+            // All custom tags
+            var selects = tables.Where(x => x.IsCustomTag).Select(x => $"SELECT '{x.TableName}' AS [name], [date], [value] FROM [{x.TableName}]");
+            var query = string.Join("\r\nUNION ALL\r\n", selects) + "\r\nGO\r\n";
+            create.AppendLine(CreateView("AllCustomTags", $"--Union of all custom tags\r\n{query}"));
+            drop.AppendLine("DROP VIEW IF EXISTS AllCustomTags");
 
+            // last occurrence of tag
+            query = $@"SELECT name, MAX(date) LastOccurrence
+FROM AllCustomTags
+WHERE value=1
+GROUP BY name
+--ORDER BY MAX(date) DESC";
+            create.AppendLine(CreateView("LastTag", query));
+            drop.AppendLine("DROP VIEW IF EXISTS LastTag");
+
+            // TagUsePast60Days
+            query = $@"-- rolling sum of occurrences of a tag
+SELECT name, date, value, SUM(CAST(value AS INT)) OVER
+  (PARTITION BY name ORDER BY date ASC ROWS 60 PRECEDING)
+  AS TagCount
+  FROM AllCustomTags
+--ORDER BY date DESC";
+            create.AppendLine(CreateView("TagUsePast60Days", query));
+            drop.AppendLine("DROP VIEW IF EXISTS TagUsePast60Days");
+        }
+
+        internal static void AppendScriptsFromTableObject(ExistTable existTable, StringBuilder create, StringBuilder drop)
+        {
             if (existTable.HasError)
             {
                 Console.WriteLine($"Note: Script for {existTable.TableName} was not generated due to an error: {existTable.ErrorMessage}");
                 return;
             }
 
-            Console.WriteLine($"Created script for {existTable.TableName}");
+            Console.WriteLine($"Created script for {(existTable.IsCustomTag ? "custom tag " : string.Empty)}{existTable.TableName}");
 
             create.AppendLine(existTable.ImportScript());
             drop.AppendLine(existTable.DropThisTableStatement());
         }
+
+        internal static string CreateView(string viewName, string query) => $@"GO
+DROP VIEW IF EXISTS {viewName}
+GO
+CREATE VIEW {viewName}
+AS
+{query}
+";
 
         internal static ExistTable? FileToTableObject(string file)
         {

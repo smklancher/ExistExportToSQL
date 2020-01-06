@@ -21,13 +21,28 @@ Options:
 
 The utility does not directly import the data, just generates a script that tells SQL Server how to import the data from the json files.  Note that a static script would not be sufficient because different people have different attributes enabled on their accounts, and use different custom tags.  The data available will depend on which attibutes are enabled and populated with data in your Exist account, and each will result in its own table.  A few additional helper tables created as well.
 
-### Helper Tables
+### Helper Tables and Views
 
 * 'location_geo' enhances original table 'location' by storing coordinates in SQL Server's native GEOGRAPHY data type
 * 'sleep_end_ex' enhances original table 'sleep_end' by normalizing the 'minutes from midnight as integer' data to TIME and DATETIME
 * 'sleep_start_ex' enhances original table 'sleep_start' by normalizing the 'minutes from midday as integer' data to TIME and DATETIME
+* 'AllCustomTags' is a view that is a union of all custom tag tables allowing for easier queries across a set of different tags
+* 'LastTag' is a view that shows the date of the last occurrence of each tag
+* 'TagUsePast60Days' is a view that view that shows, for any given tag and date, the use of that tag in the past 60 days
 
 ## Example Queries
+
+### Last occurrence and recent use of each tag
+
+For each tag, this show the last date it was used, and the number of times it has been used in the past 60 days.
+
+``` SQL
+SELECT lt.name, lt.LastOccurrence, p60.TagCount AS Past60DayTagUse
+FROM LastTag AS lt
+INNER JOIN TagUsePast60Days p60 ON p60.name=lt.name 
+  AND p60.date=(SELECT MAX(date) FROM TagUsePast60Days)
+ORDER BY lt.LastOccurrence DESC
+```
 
 ### Rolling sum of tag occurrences
 
@@ -40,6 +55,14 @@ SELECT date, value, SUM(value) OVER
   AS OccurrencesInPrev60Days
 FROM tag1 as c
 ORDER BY date DESC
+```
+
+Using the helper view, this is now the same as:
+
+``` SQL
+SELECT name, date, value, TagCount
+FROM TagUsePast60Days
+WHERE name='tag1'
 ```
 
 ### Group of tags over time
