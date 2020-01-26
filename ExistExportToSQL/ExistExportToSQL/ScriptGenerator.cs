@@ -35,8 +35,8 @@ namespace ExistExportToSQL
 
             AppendScriptsForViews(tables, create, drop);
 
-            CreateScript = create.ToString();
-            DropScript = drop.ToString();
+            CreateScript = create.ToString().Replace("\r\n", "\n", StringComparison.InvariantCultureIgnoreCase);
+            DropScript = drop.ToString().Replace("\r\n", "\n", StringComparison.InvariantCultureIgnoreCase);
         }
 
         internal static void AppendScriptsForViews(IEnumerable<ExistTable> tables, StringBuilder create, StringBuilder drop)

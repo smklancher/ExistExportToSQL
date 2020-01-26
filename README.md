@@ -34,7 +34,7 @@ The utility does not directly import the data, just generates a script that tell
 
 ### Last occurrence and recent use of each tag
 
-For each tag, this show the last date it was used, and the number of times it has been used in the past 60 days.
+For each tag, this shows the last date it was used, and the number of times it has been used in the past 60 days.
 
 ``` SQL
 SELECT lt.name, lt.LastOccurrence, p60.TagCount AS Past60DayTagUse
