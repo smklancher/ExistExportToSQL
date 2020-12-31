@@ -63,6 +63,7 @@ Using the helper view, this is now the same as:
 SELECT name, date, value, TagCount
 FROM TagUsePast60Days
 WHERE name='tag1'
+ORDER BY date DESC
 ```
 
 ### Group of tags over time
