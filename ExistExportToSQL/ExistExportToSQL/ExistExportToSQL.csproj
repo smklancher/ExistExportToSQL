@@ -2,9 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <StartupObject>ExistExportToSQL.Program</StartupObject>
-    <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -20,15 +19,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TrimmerRootAssembly Include="System.Text.Json" />
+    <PackageReference Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.20574.7" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.19577.1" />
+    <TrimmerRootAssembly Include="System.Text.Json" />
   </ItemGroup>
 
 </Project>

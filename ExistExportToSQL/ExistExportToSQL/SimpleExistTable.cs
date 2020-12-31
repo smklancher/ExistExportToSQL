@@ -16,15 +16,15 @@ namespace ExistExportToSQL
 
         public string ValueSqlTypeName { get; private set; } = "NVARCHAR(MAX)";
 
-        public override string ImportScript()
+        public override string ImportScript(bool dropTableFirst)
         {
-            return BasicImportStart() + $"WITH(date DATE, value {ValueSqlTypeName})\r\n";
+            return BasicImportStart(dropTableFirst) + $"WITH(date DATE, value {ValueSqlTypeName})\r\n";
         }
 
         private void Load()
         {
             // document cannot be disposed while still using the JsonElements, so can't read/dispose in another function
-            using var fs = File.OpenRead(FileName);
+            using var fs = File.OpenRead(FullFilePath);
             using JsonDocument document = JsonDocument.Parse(fs);
 
             var valuesIncludingNulls = Enumerable.Empty<JsonElement>();

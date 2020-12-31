@@ -7,22 +7,33 @@ using System.Text.Json;
 
 namespace ExistExportToSQL
 {
+    internal record FileNameParts(string FileName, string FilePath, string TypeName, string TableName, string Year);
+
     internal abstract class ExistTable
     {
         public ExistTable(string jsonFile)
         {
-            FileName = jsonFile;
+            FullFilePath = jsonFile;
+            Parts = PartsFromFile(jsonFile);
+        }
+
+        public ExistTable(FileNameParts parts)
+        {
+            Parts = parts;
+            FullFilePath = parts.FilePath;
         }
 
         public string ErrorMessage { get; protected set; } = string.Empty;
 
-        public string FileName { get; protected set; }
+        public string FullFilePath { get; protected set; }
 
         public bool HasError { get; protected set; }
 
         public bool IsCustomTag { get; protected set; } = false;
 
-        public string TableName => Path.GetFileNameWithoutExtension(FileName);
+        public FileNameParts Parts { get; private set; }
+
+        public virtual string TableName => Parts.TableName;
 
         public static string DropTableStatement(string tableName)
         {
@@ -34,19 +45,48 @@ namespace ExistExportToSQL
             return $"RAISERROR('{message.Replace("'", "''", StringComparison.InvariantCulture)}', 0, 1) WITH NOWAIT";
         }
 
-        public string BasicImportStart()
+        public static FileNameParts PartsFromFile(string filepath)
         {
-            return @$"
+            var name = Path.GetFileNameWithoutExtension(filepath).ToLowerInvariant();
 
-{LogMessageInScript($"Importing {FileName}")}
+            var parts = name.Split('_');
+            var typename = parts[0];
+            var year = parts[parts.Length - 1];
+            var nameparts = new ArraySegment<string>(parts, 1, parts.Length - 2).ToArray();
+            var tablename = string.Join('_', nameparts);
+
+            return new FileNameParts(name, filepath, typename, tablename, year);
+        }
+
+        public string BasicImportStart(bool dropTableFirst)
+        {
+            if (dropTableFirst)
+            {
+                return @$"
+
+{LogMessageInScript($"Importing {FullFilePath}")}
 SELECT @JSON = BulkColumn
-FROM OPENROWSET(BULK '{FileName}', SINGLE_CLOB) AS j
+FROM OPENROWSET(BULK '{FullFilePath}', SINGLE_CLOB) AS j
 
 {DropTableStatement(TableName)}
 SELECT *
 INTO {TableName}
 FROM OPENJSON(@JSON)
 ";
+            }
+            else
+            {
+                return @$"
+
+{LogMessageInScript($"Importing {FullFilePath}")}
+SELECT @JSON = BulkColumn
+FROM OPENROWSET(BULK '{FullFilePath}', SINGLE_CLOB) AS j
+
+INSERT INTO {TableName}
+SELECT *
+FROM OPENJSON(@JSON)
+";
+            }
         }
 
         public string DropThisTableStatement() => DropTableStatement(TableName);
@@ -57,6 +97,6 @@ FROM OPENJSON(@JSON)
             Console.Error.WriteLine($"Error from {TableName}: {message}");
         }
 
-        public abstract string ImportScript();
+        public abstract string ImportScript(bool dropTableFirst);
     }
 }

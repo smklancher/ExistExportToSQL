@@ -15,6 +15,8 @@ namespace ExistExportToSQL
 
         public string Folder { get; set; } = string.Empty;
 
+        public List<string> TablesAddedToDropScript { get; } = new();
+
         public void GenerateFromFolder()
         {
             var create = new StringBuilder(ScriptStart());
@@ -42,7 +44,7 @@ namespace ExistExportToSQL
         internal static void AppendScriptsForViews(IEnumerable<ExistTable> tables, StringBuilder create, StringBuilder drop)
         {
             // All custom tags
-            var selects = tables.Where(x => x.IsCustomTag).Select(x => $"SELECT '{x.TableName}' AS [name], [date], [value] FROM [{x.TableName}]");
+            var selects = tables.DistinctBy(x => x.TableName).Where(x => x.IsCustomTag).Select(x => $"SELECT '{x.TableName}' AS [name], [date], [value] FROM [{x.TableName}]");
             var query = string.Join("\r\nUNION ALL\r\n", selects) + "\r\nGO\r\n";
             create.AppendLine(CreateView("AllCustomTags", $"--Union of all custom tags\r\n{query}"));
             drop.AppendLine("DROP VIEW IF EXISTS AllCustomTags");
@@ -67,20 +69,6 @@ SELECT name, date, value, SUM(CAST(value AS INT)) OVER
             drop.AppendLine("DROP VIEW IF EXISTS TagUsePast60Days");
         }
 
-        internal static void AppendScriptsFromTableObject(ExistTable existTable, StringBuilder create, StringBuilder drop)
-        {
-            if (existTable.HasError)
-            {
-                Console.WriteLine($"Note: Script for {existTable.TableName} was not generated due to an error: {existTable.ErrorMessage}");
-                return;
-            }
-
-            Console.WriteLine($"Created script for {(existTable.IsCustomTag ? "custom tag " : string.Empty)}{existTable.TableName}");
-
-            create.AppendLine(existTable.ImportScript());
-            drop.AppendLine(existTable.DropThisTableStatement());
-        }
-
         internal static string CreateView(string viewName, string query) => $@"GO
 DROP VIEW IF EXISTS {viewName}
 GO
@@ -91,13 +79,14 @@ AS
 
         internal static ExistTable? FileToTableObject(string file)
         {
-            var name = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
             ExistTable? existTable = null;
 
+            var parts = ExistTable.PartsFromFile(file);
+
             // special handling for types that don't just have date and value
-            if (Enums.IsComplexType(name))
+            if (Enums.IsComplexType(parts.TypeName))
             {
-                switch (name)
+                switch (parts.TypeName)
                 {
                 case "averages":
                     existTable = new AveragesExistTable(file);
@@ -108,7 +97,7 @@ AS
                     break;
 
                 default:
-                    Console.WriteLine($"Skipping complex type {name}");
+                    Console.WriteLine($"Skipping complex type {parts.FileName}");
                     break;
                 }
             }
@@ -118,6 +107,29 @@ AS
             }
 
             return existTable;
+        }
+
+        internal void AppendScriptsFromTableObject(ExistTable existTable, StringBuilder create, StringBuilder drop)
+        {
+            if (existTable.HasError)
+            {
+                Console.WriteLine($"Note: Script for {existTable.Parts.FileName} was not generated due to an error: {existTable.ErrorMessage}");
+                return;
+            }
+
+            Console.WriteLine($"Created script for {(existTable.IsCustomTag ? "custom tag " : string.Empty)}{existTable.Parts.FileName}");
+
+            bool dropTable = false;
+            if (!TablesAddedToDropScript.Contains(existTable.TableName))
+            {
+                // the first time a table name is seen, add the drop script
+                dropTable = true;
+                TablesAddedToDropScript.Add(existTable.TableName);
+            }
+
+            create.AppendLine(existTable.ImportScript(dropTable));
+
+            drop.AppendLine(existTable.DropThisTableStatement());
         }
 
         private static string DropHelperTables()
