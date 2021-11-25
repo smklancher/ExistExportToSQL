@@ -19,14 +19,11 @@ public class Program
             outputFile = new FileInfo(Path.Combine(inputFolder.FullName, "ImportExistJson.sql"));
         }
 
-        var dropFile = Path.Combine(outputFile.Directory!.FullName, "DropExistTables.sql");
+        Console.WriteLine($"Looking for Exist json files in folder: {inputFolder.FullName}");
+        Console.WriteLine($"Writing output script to {outputFile.FullName}");
 
         var gen = new ScriptGenerator();
 
-        gen.Folder = inputFolder.FullName;
-        gen.GenerateFromFolder();
-
-        File.WriteAllText(outputFile.FullName, gen.CreateScript);
-        File.WriteAllText(dropFile, gen.DropScript);
+        gen.GenerateFromFolder(inputFolder.FullName, outputFile.FullName);
     }
 }

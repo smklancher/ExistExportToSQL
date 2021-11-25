@@ -12,15 +12,21 @@ public class ScriptGenerator
 
     public List<string> TablesAddedToDropScript { get; } = new();
 
-    public void GenerateFromFolder()
+    public void GenerateFromFolder(string inputFolder, string outputFile)
     {
         var create = new StringBuilder(ScriptStart());
         var drop = new StringBuilder();
-        var files = Directory.EnumerateFiles(Folder, "*.json");
+        var files = Directory.EnumerateFiles(inputFolder, "*.json");
 
         // ways other than OfType don't seem to work with nullability tracking yet:
         // https://github.com/dotnet/roslyn/issues/37468#issuecomment-515142288
         var tables = files.Select(x => FileToTableObject(x)).OfType<ExistTable>();
+
+        if (!tables.Any())
+        {
+            Console.WriteLine($"No json files to parse in input folder: {inputFolder}");
+            return;
+        }
 
         foreach (var table in tables)
         {
@@ -34,6 +40,11 @@ public class ScriptGenerator
 
         CreateScript = create.ToString().Replace("\r\n", "\n", StringComparison.InvariantCultureIgnoreCase);
         DropScript = drop.ToString().Replace("\r\n", "\n", StringComparison.InvariantCultureIgnoreCase);
+
+        var dropFile = Path.Combine(new FileInfo(outputFile).Directory!.FullName, "DropExistTables.sql");
+
+        File.WriteAllText(outputFile, CreateScript);
+        File.WriteAllText(dropFile, DropScript);
     }
 
     internal static void AppendScriptsForViews(IEnumerable<ExistTable> tables, StringBuilder create, StringBuilder drop)
