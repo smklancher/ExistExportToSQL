@@ -79,31 +79,41 @@ AS
 
         internal static ExistTable? FileToTableObject(string file)
         {
+            // ignore .net json files
+            if (file.Contains(".deps") || file.Contains(".runtimeconfig")) { return null; }
+
             ExistTable? existTable = null;
 
-            var parts = ExistTable.PartsFromFile(file);
-
-            // special handling for types that don't just have date and value
-            if (Enums.IsComplexType(parts.TypeName))
+            try
             {
-                switch (parts.TypeName)
+                var parts = ExistTable.PartsFromFile(file);
+
+                // special handling for types that don't just have date and value
+                if (Enums.IsComplexType(parts.TypeName))
                 {
-                case "averages":
-                    existTable = new AveragesExistTable(file);
-                    break;
+                    switch (parts.TypeName)
+                    {
+                    case "averages":
+                        existTable = new AveragesExistTable(file);
+                        break;
 
-                case "correlations":
-                    existTable = new CorrelationsExistTable(file);
-                    break;
+                    case "correlations":
+                        existTable = new CorrelationsExistTable(file);
+                        break;
 
-                default:
-                    Console.WriteLine($"Skipping complex type {parts.FileName}");
-                    break;
+                    default:
+                        Console.WriteLine($"Skipping complex type {parts.FileName}");
+                        break;
+                    }
+                }
+                else
+                {
+                    existTable = new SimpleExistTable(file);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                existTable = new SimpleExistTable(file);
+                Console.WriteLine($"Could not parse file as exist table ({file}): {ex}");
             }
 
             return existTable;
