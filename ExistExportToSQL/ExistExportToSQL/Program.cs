@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace ExistExportToSQL
+﻿namespace ExistExportToSQL
 {
     public class Program
     {
@@ -22,7 +19,7 @@ namespace ExistExportToSQL
                 outputFile = new FileInfo(Path.Combine(inputFolder.FullName, "ImportExistJson.sql"));
             }
 
-            var dropFile = Path.Combine(outputFile.Directory.FullName, "DropExistTables.sql");
+            var dropFile = Path.Combine(outputFile.Directory!.FullName, "DropExistTables.sql");
 
             var gen = new ScriptGenerator();
 

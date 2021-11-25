@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Text;
-using System.Text.Json;
-
-namespace ExistExportToSQL
+﻿namespace ExistExportToSQL
 {
     internal record FileNameParts(string FileName, string FilePath, string TypeName, string TableName, string Year);
 
