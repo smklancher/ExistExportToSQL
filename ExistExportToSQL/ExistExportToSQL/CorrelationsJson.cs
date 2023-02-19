@@ -1,8 +1,8 @@
 ﻿namespace ExistExportToSQL;
 
-internal class CorrelationsExistTable : ExistTable
+internal class CorrelationsJson : ExistJsonFile
 {
-    public CorrelationsExistTable(string jsonFile) : base(jsonFile)
+    public CorrelationsJson(string jsonFile) : base(jsonFile)
     {
     }
 

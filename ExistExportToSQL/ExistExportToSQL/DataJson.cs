@@ -2,9 +2,9 @@
 
 namespace ExistExportToSQL;
 
-internal class SimpleExistTable : ExistTable
+internal class DataJson : ExistJsonFile
 {
-    public SimpleExistTable(string jsonFile) : base(jsonFile)
+    public DataJson(string jsonFile) : base(jsonFile)
     {
         Load();
     }
@@ -67,19 +67,20 @@ internal class SimpleExistTable : ExistTable
             // ... and everything parses as an integer
             if (values.All(x => int.TryParse(x.GetRawText(), out _)))
             {
-                // and everything is 0 or 1, then we will assume this is a custom tag
+                // and everything is 0 or 1, then it looks like a custom tag
                 if (values.All(x => x.GetInt64() == 0 || x.GetInt64() == 1))
                 {
-                    IsCustomTag = true;
-                    ValueSqlTypeName = "BIT";
-                    return;
+                    ValuesLookLikeBool = true;
+
+                    if (values.All(x => x.GetInt64() == 0))
+                    {
+                        AllZeros = true;
+                    }
                 }
-                else
-                {
-                    // otherwise, int
-                    ValueSqlTypeName = "INT";
-                    return;
-                }
+
+                IsIntegerTrait = true;
+                ValueSqlTypeName = "INT";
+                return;
             }
             else
             {

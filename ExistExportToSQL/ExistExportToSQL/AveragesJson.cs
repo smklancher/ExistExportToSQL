@@ -1,8 +1,8 @@
 ﻿namespace ExistExportToSQL;
 
-internal class AveragesExistTable : ExistTable
+internal class AveragesJson : ExistJsonFile
 {
-    public AveragesExistTable(string jsonFile) : base(jsonFile)
+    public AveragesJson(string jsonFile) : base(jsonFile)
     {
     }
 
